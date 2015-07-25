@@ -12,73 +12,20 @@
   (let [player (filter #(= (.getName %) name) (bukkit/online-players))]
     (first player)))
 
-(defn spawn-cow
-  [player]
-  (bukkit/ui-sync @plugin #(core/spawn-command player :cow)))
-
-(defn make-blocks
-  [player]
-  (let [{:keys [x y z world]} (bean (.getLocation player))]
-    (doseq [x' (range (- x 10) (+ x 10))
-            z' (range (- z 10) (+ z 10))]
-      (let [block (.getBlockAt world x' y z')]
-        (.setType block (:diamond_block items/materials))))))
-
-(defn make-blocks-sync
-  [player]
-  (bukkit/ui-sync @plugin #(make-blocks player)))
-
-(defn next-row [row]
-  (concat [1] (map +' row (drop 1 row)) [1]))
-
-(defn pascals-triangle [n]
-  (take n (iterate next-row '(1))))
-
 (defn make-diamond-at
   [world x y z]
   (let [block (.getBlockAt world x y z)]
     (.setType block (:diamond_block items/materials))))
 
-(defn triangle
-  [player size fn]
-  (let [{:keys [world x y z]} (bean (.getLocation player))
-        pascal (pascals-triangle size)
-        top (+ size y)]
-    (doseq [row (range 0 (dec size))
-            col (range 0 (count (nth pascal row)))]
-      (let [b (-> pascal (nth row) (nth col))]
-        (if (odd? b)
-          (fn world (+ x col) (- top row) z))))))
 
-(defn triangle-sync
-  [player size]
-  (bukkit/ui-sync @plugin #(triangle player size make-diamond-at)))
-
-
-(comment
-  1 = [1]
-
-  2 = [[1 1]
-       [1 1]]
-
-  3 = [[1 2 1]
-       [2 4 2]
-       [1 2 1]]
-
-  4 = [[1 3 3 1]
-       [3 9 9 3]
-       [3 9 9 3]
-       [1 3 3 1]]
-
-  5 = [[1 4  6  4  1]
-       [4 16 24 16 4]
-       [6 24 36 24 6]
-       [4 16 24 16 4]
-       [1 4  6  4  1]])
+(defn add-mod2
+  "Adds the numbers together and mods with 2 so the result is either 1 or 0"
+  [& nums]
+  (mod (apply + nums) 2))
 
 (defn add-rows
   [[a b]]
-  (map +' a b (next a) (next b)))
+  (map add-mod2 a b (next a) (next b)))
 
 (defn pad
   [previous]
@@ -99,29 +46,47 @@
   [previous]
   (->> previous pad pairs (map add-rows)))
 
-(defn pascal3d [size]
+(defn sierpinsky3d
+  [size]
   (take size (iterate next-level [[1]])))
 
+(defn get-coords
+ "Gets the coordinates to place the block at, ensuring the rows of the triangle are centralized"
+ [col row depth x y z size]
+ (let [top (+ size y)]
+   [(-> col (+ x) (- (/ row 2)))
+    (- top row)
+    (-> depth (+ z) (- (/ row 2)))]))
+
 (defn triangle3d
-  [player size fn]
-  (let [{:keys [world x y z]} (bean (.getLocation player))
-        pascal (pascal3d size)
-        top (+ size y)]
-    (doseq [row (range 0 (dec size))
-            col (range 0 (count (nth pascal row)))
-            depth (range 0 (count (nth pascal row)))]
-      (let [b (-> pascal (nth row) (nth col) (nth depth))]
-        (if (odd? b)
-          (fn world (+ x col) (- top row) (+ z depth)))))))
-
-(defn debug-params
-  [w x y z]
-  (println "X: " x " Y: " y " Z: " z)
-)
-
-(defn triangle3d-sync
+  "Pulls rows from the sierpinsky triangle and transposes the positions into the players world."
   [player size]
-  (bukkit/ui-sync @plugin #(triangle3d player size make-diamond-at)))
+  (let [{:keys [world blockX blockY blockZ]} (bean (.getLocation player))
+        sierpinsky (sierpinsky3d size)]
+    (for [row (range 0 (dec size))
+          col (range 0 (count (nth sierpinsky row)))
+          depth (range 0 (count (nth sierpinsky row)))
+          :let [b (-> sierpinsky (nth row) (nth col) (nth depth))]
+          :when (odd? b)]
+      (let [[x y z] (get-coords col row depth blockX blockY blockZ size)] 
+        [world x y z]))))
+
+(defn set-blocks! [l] (doseq [block l]
+                        (apply make-diamond-at block)))
+
+(defn gen-triangle [size player-name] (triangle3d (player-by-name player-name) size))
+
+(defn digestable-blocks
+  "Partitions the blocks into a chunk size that the minecraft renderer can handle."
+  [l] (partition-all 500 l))
+
+(defn make-triangle
+  [size player-name]
+  (map-indexed
+   (fn [k v]
+     (bukkure.bukkit/delayed-task @plugin
+                                  #(set-blocks! v) (* k 20)))
+   (digestable-blocks (gen-triangle size player-name))))
 
 
 (defn on-enable [plugin-instance]
