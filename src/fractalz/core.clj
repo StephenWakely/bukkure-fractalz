@@ -5,6 +5,12 @@
 
 (defonce plugin (atom nil))
 
+(defn make-sierpinsky-pyramid
+  [size name]
+  (pyramid/make-sierpinsky-pyramid size
+                                   (pyramid/player-by-name name)
+                                   @plugin))
+
 (defn sierpinsky
   [sender size]
   (pyramid/make-sierpinsky-pyramid size sender @plugin)
