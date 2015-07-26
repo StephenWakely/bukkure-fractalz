@@ -87,17 +87,15 @@
 
 (defn do-it-async
   [plugin blocks]
-  (let [nthblock (atom 0)]
-    (letfn [(do-it []
-              (bukkit/delayed-task plugin
-                              (fn []
-                                (when (> (count blocks) @nthblock)
-                                  (do
-                                    (set-blocks! (nth blocks @nthblock))
-                                    (swap! nthblock inc)
-                                    (do-it))
-                                  )) 20))]
-      (do-it))))
+  (letfn [(do-it [blocks']
+            (bukkit/delayed-task plugin
+                                 (fn []
+                                   (when (seq blocks')
+                                     (do
+                                       (set-blocks! (first blocks'))
+                                       (do-it (next blocks')))
+                                     )) 1))]
+    (do-it blocks)))
 
 (defn make-sierpinsky-pyramid
   [size player plugin]
