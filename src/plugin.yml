@@ -1,3 +1,9 @@
 name: fractalz
 main: fractalz.BukkurePlugin
 version: 0.1.0
+commands:
+  sierpinsky:
+    description: Create a Sierpinsky pyramid.
+    usage: /<command> size
+    permission: <plugin name>.sierpinsky
+    permission-message: You don't got the right.

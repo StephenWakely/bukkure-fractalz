@@ -1,11 +1,20 @@
 # bukkure-fractalz
 Creating fractals in Minecraft using Clojure with the [Bukkure plugin](https://github.com/SevereOverfl0w/bukkure).
 
-Currently the only way to generate these triangles is to connect a repl to a Spigot server running Bukkure and run the following function :
+To generate these triangles connect a repl to a Spigot server running Bukkure and run the following function within the `fractalz.core` namespace :
 
 ```
 (make-sierpinsky-pyramid 100 "<The name of your player>")
 ```
+
+Or from within the Minecraft console run
+
+```
+  /sierpinsky 100
+```
+
+Replace 100 with the size of the triangle you want to create.
+
 
 ## Sierpinsky Pyramids
 
