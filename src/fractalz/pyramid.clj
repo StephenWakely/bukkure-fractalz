@@ -99,5 +99,5 @@
 
 (defn make-sierpinsky-pyramid
   [size player plugin]
-  (let [blocks (digestable-blocks (gen-pyramid size player))]
+  (let [blocks (-> (gen-pyramid size player) digestable-blocks reverse)]
     (do-it-async plugin blocks)))
