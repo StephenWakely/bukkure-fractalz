@@ -50,7 +50,7 @@
 (defn get-coords
   "Gets the coordinates to place the block at, ensuring the rows of the triangle are centralized"
   [col row depth x y z size]
-  (let [top (+ size y -1)]
+  (let [top (+ size y -2)]
     [(-> col (+ x) (- (/ row 2)))
      (- top row)
      (-> depth (+ z) (- (/ row 2)))]))
