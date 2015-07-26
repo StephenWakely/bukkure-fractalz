@@ -58,7 +58,7 @@
     (- top row)
     (-> depth (+ z) (- (/ row 2)))]))
 
-(defn triangle3d
+(defn pyramid
   "Pulls rows from the sierpinsky triangle and transposes the positions into the players world."
   [player size]
   (let [{:keys [world blockX blockY blockZ]} (bean (.getLocation player))
@@ -74,19 +74,19 @@
 (defn set-blocks! [l] (doseq [block l]
                         (apply make-diamond-at block)))
 
-(defn gen-triangle [size player-name] (triangle3d (player-by-name player-name) size))
+(defn gen-pyramid [size player-name] (pyramid (player-by-name player-name) size))
 
 (defn digestable-blocks
   "Partitions the blocks into a chunk size that the minecraft renderer can handle."
   [l] (partition-all 500 l))
 
-(defn make-triangle
+(defn make-sierpinsky-pyramid
   [size player-name]
   (map-indexed
    (fn [k v]
      (bukkure.bukkit/delayed-task @plugin
                                   #(set-blocks! v) (* k 20)))
-   (digestable-blocks (gen-triangle size player-name))))
+   (digestable-blocks (gen-pyramid size player-name))))
 
 
 (defn on-enable [plugin-instance]
